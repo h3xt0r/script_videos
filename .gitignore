@@ -1,0 +1,38 @@
+# Entorno virtual del proyecto (515 MB)
+venv/
+
+# Audio generado o de prueba: no se versiona salvo las voces base
+*.mp3
+*.wav
+
+# Referencias de voz base que sí se versionan
+!tts/clon_narradora_english.mp3
+!tts/consistencia_b.mp3
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+
+# --- Contenido privado: libros, artículos y sus derivados ---
+# Entradas y salidas de extracción/preparación. Se conserva la carpeta con su
+# .gitkeep, pero nunca el contenido.
+epub_extract/src/*
+!epub_extract/src/.gitkeep
+epub_extract/html/*
+!epub_extract/html/.gitkeep
+epub_extract/preparado/*
+!epub_extract/preparado/.gitkeep
+pdf_extract/src/*
+!pdf_extract/src/.gitkeep
+pdf_extract/texto/*
+!pdf_extract/texto/.gitkeep
+tts/audiolibros/*
+!tts/audiolibros/.gitkeep
+
+# Copias sueltas de material de entrada en la raíz
+/*.pdf
+/*.epub
+
+# Clave local de Unsloth Studio (nunca se versiona)
+.unsloth.key
+.env
