@@ -57,3 +57,21 @@ derivados quedan locales (ver `.gitignore`):
 
 Las carpetas anteriores se conservan en el repositorio con un `.gitkeep` para
 que el pipeline funcione recién clonado.
+
+## Protección extra: hook pre-push
+
+`.gitignore` deja de proteger un archivo en el momento en que se versiona (por
+un `git add -f`, por ejemplo). Para eso está `.githooks/pre-push`, que revisa lo
+que va a viajar al remoto y corta el push si aparece material privado, audio
+derivado o claves. Las dos voces base están admitidas de forma explícita.
+
+Hay que activarlo una vez por clon:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Se puede probar sin tocar el remoto con `git push --dry-run`. El hook revisa dos
+cosas: el árbol final que se publica y cualquier archivo añadido en los commits
+del rango, porque un archivo borrado más adelante sigue siendo accesible por SHA
+en GitHub.

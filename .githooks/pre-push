@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# pre-push: rechaza subir material privado o claves.
+#
+# git no protege nada una vez que un archivo está versionado: .gitignore deja de
+# aplicarle. Este hook revisa lo que está a punto de viajar al remoto y corta el
+# push si encuentra libros, texto extraído, audio derivado o credenciales.
+#
+# Se activa con: git config core.hooksPath .githooks
+
+set -u
+
+CERO="0000000000000000000000000000000000000000"
+
+# Voces base que sí se versionan, admitidas de forma explícita.
+PERMITIDAS="tts/consistencia_b.mp3
+tts/clon_narradora_english.mp3"
+
+detectados=""
+
+prohibido() {
+	case "$1" in
+		*/.gitkeep) return 1 ;;
+	esac
+	case "
+$PERMITIDAS
+" in
+		*"
+$1
+"*) return 1 ;;
+	esac
+
+	case "$1" in
+		# Libros y artículos de entrada, y sus copias en la raíz
+		epub_extract/src/* | pdf_extract/src/* | *.pdf | *.epub) return 0 ;;
+		# Derivados de extracción y preparación
+		epub_extract/html/* | epub_extract/preparado/*) return 0 ;;
+		pdf_extract/texto/* | tts/audiolibros/*) return 0 ;;
+		# Audio y claves
+		*.mp3 | *.wav | *.key | .unsloth.key | .env) return 0 ;;
+		*credentials* | *token* | *secret*) return 0 ;;
+	esac
+	return 1
+}
+
+examinar() {
+	while IFS= read -r ruta; do
+		[ -n "$ruta" ] || continue
+		if prohibido "$ruta"; then
+			detectados+="$ruta"$'\n'
+		fi
+	done <<< "$1"
+}
+
+rechazado=0
+
+# Cada línea de la entrada: <ref local> <sha local> <ref remota> <sha remota>
+while read -r ref_local sha_local ref_remota sha_remota; do
+	[ -n "${sha_local:-}" ] || continue
+	[ "$sha_local" = "$CERO" ] && continue
+
+	# Rama nueva, force-push o historial sin base común: revisar todo.
+	base="$sha_remota"
+	if [ "$sha_remota" = "$CERO" ] ||
+		! git merge-base --is-ancestor "$sha_remota" "$sha_local" 2>/dev/null; then
+		base=""
+	fi
+
+	# 1) El árbol final que se va a publicar.
+	examinar "$(git ls-tree -r --name-only "$sha_local")"
+
+	# 2) Cualquier archivo añadido en los commits del rango, aunque luego se
+	#    borrara: seguiría siendo accesible por SHA en el remoto.
+	if [ -z "$base" ]; then
+		rango="$sha_local"
+	else
+		rango="$base..$sha_local"
+	fi
+	examinar "$(git rev-list --pretty=format: --name-only --diff-filter=A "$rango" 2>/dev/null)"
+done
+
+if [ -n "$detectados" ]; then
+	printf '%s' "$detectados" | sort -u | sed 's/^/    /' >&2
+	cat >&2 <<'FIN'
+
+✗ push rechazado: hay material privado o claves en lo que intentas subir.
+
+.gitignore no protege un archivo que ya está versionado. Para sacarlo del
+índice sin borrarlo del disco:
+
+    git rm -r --cached <ruta>
+
+Y revisa el commit antes de repetir el push:
+
+    git show --stat HEAD
+FIN
+	rechazado=1
+fi
+
+exit "$rechazado"

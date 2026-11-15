@@ -28,6 +28,9 @@ Decisions
 - El HTML de pdftotext -bbox-layout se usa solo en memoria, para orden de columnas, párrafos y zonas de figura; nunca se guarda ni llega al LLM.
 - OCR con ocrmypdf --force-ocr --pages <rango>, limitado a las páginas sin capa de texto (menos de 40 caracteres alfanuméricos); nada de --skip-text global.
 - Figuras incrustadas con pdfimages; figuras vectoriales renderizando la franja con pdftoppm -r 150 + convert -trim cuando hay leyenda «Figura N:» y no hay imagen incrustada.
+- La clave de Unsloth Studio no se escribe en el código: se lee de UNSLOTH_API_KEY o de .unsloth.key (0600, ignorado por git) junto a cada script.
+- Repo público h3xt0r/script_videos recreado desde cero con un solo commit (90192a6): sin libros de muestra, sin texto extraído y sin la clave. src/, html/, preparado/, texto/ y audiolibros/ quedan fuera; solo viajan las voces base consistency_b.mp3 y clon_narradora_english.mp3.
+- Hook .githooks/pre-push (activar con git config core.hooksPath .githooks): corta el push si sube material privado, audio derivado o claves.
 - Las etiquetas de un diagrama vectorial se quitan del texto: las sustituye la descripción con visión.
 - Marcas <<<IMAGEN: imagenes/...>>> y <<<FORMULA: ...>>> en el texto plano; la preparación resuelve las rutas con Gemma visión y cachea por SHA-256 en preparado/cache_imagenes/.
 Work State
